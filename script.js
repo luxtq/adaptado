@@ -1,7 +1,7 @@
 const btnTop = document.getElementById('btnTop');
 
 window.addEventListener('scroll', () => {
-    if (window.scrollY > 300) {
+    if (window.scrollY > 150) {
         btnTop.classList.add('visible');
         document.querySelector('.cabecera_contenedor').classList.add('scrolled');
     } else {
