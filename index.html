@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<!-- DOCTYPE: le dice al navegador que use el estándar HTML5 moderno -->
+<html lang="es">
+<!-- lang="es": indica que el contenido está en español (accesibilidad y SEO) -->
+
+<head>
+  <!-- ── META Y CONFIGURACIÓN BÁSICA ── -->
+  <meta charset="UTF-8">
+  <!-- charset UTF-8: permite caracteres especiales como ñ, tildes, emojis -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- viewport: hace que el sitio sea responsive. Sin esto, los móviles
+       mostrarían la versión de escritorio a escala reducida -->
+
+  <title>Biblioteca</title>
+  <!-- Texto que aparece en la pestaña del navegador -->
+
+  <!-- Enlaza el archivo CSS externo que contiene todos los estilos -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FONDO ANIMADO
+       Div vacío que sirve únicamente como lienzo visual.
+       El CSS le aplica el patrón de tablero animado (posición
+       fixed, cubre toda la pantalla, z-index 0 = detrás de todo)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="bg"></div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       HEADER — BARRA DE NAVEGACIÓN SUPERIOR
+       Contiene el logo (ojo mini + nombre) y los enlaces de nav
+       ══════════════════════════════════════════════════════════ -->
+  <header>
+
+    <!-- LOGO: icono SVG del ojo + texto "BIBLIOTECA" -->
+    <div class="logo">
+
+      <!-- Ojo pequeño dibujado con SVG puro (sin canvas).
+           viewBox="0 0 100 50" define el sistema de coordenadas interno -->
+      <div class="eye-mini">
+        <img src="img/aaaaaaaaaa-02.png" alt="ojo mini" width="50px">
+      </div>
+
+      <!-- Nombre de la biblioteca en mayúsculas -->
+      <span class="logo-text">Biblioteca</span>
+    </div>
+
+    <!-- NAVEGACIÓN: tres enlaces como "píldoras".
+         La clase "on" marca el enlace activo (resaltado en rojo) -->
+    <nav>
+      <a href="#" class="on">Catálogo</a>
+      <a href="#">Mi cuenta</a>
+      <a href="#">Novedades</a>
+    </nav>
+
+  </header>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       HERO — SECCIÓN DESTACADA CON OJO GRANDE Y TÍTULO
+       El ojo se dibuja dinámicamente en JavaScript sobre un
+       <canvas>. El h1 y p son títulos decorativos.
+       ══════════════════════════════════════════════════════════ -->
+  <div class="hero">
+
+    <!-- Canvas sobre el que JS dibuja el ojo animado frame a frame.
+         width/height definen la resolución interna del lienzo.
+         La clase "eye-big" aplica la sombra CSS del filtro drop-shadow -->
+    <canvas class="eye-big" id="eyeCanvas" width="320" height="150"></canvas>
+
+    <h1>Catálogo</h1>
+    <p>Libros, revistas y recursos digitales</p>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       BUSCADOR
+       Input de texto que llama a filtrar() en cada pulsación
+       de tecla (oninput). El botón llama también a filtrar()
+       para soportar uso con ratón.
+       ══════════════════════════════════════════════════════════ -->
+  <div class="search">
+    <div class="search-box">
+
+      <!-- id="q" es el identificador que usa JS para leer el valor -->
+      <input type="text" id="q" placeholder="Buscar título, autor, tema…" oninput="filtrar()">
+
+      <button onclick="filtrar()">Buscar</button>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       FILTROS DE CATEGORÍA
+       Cada div llama a setF(this, 'categoría') pasándose a sí
+       mismo como referencia para poder añadir/quitar la clase
+       "on" (el CSS resalta el filtro activo en amarillo).
+       'todos' muestra todos los libros sin filtrar.
+       ══════════════════════════════════════════════════════════ -->
+  <div class="filtros">
+    <div class="filtro on" onclick="setF(this,'todos')">Todos</div>
+    <div class="filtro" onclick="setF(this,'novela')">Novela</div>
+    <div class="filtro" onclick="setF(this,'ciencia')">Ciencia</div>
+    <div class="filtro" onclick="setF(this,'historia')">Historia</div>
+    <div class="filtro" onclick="setF(this,'filosofia')">Filosofía</div>
+    <div class="filtro" onclick="setF(this,'arte')">Arte</div>
+    <div class="filtro" onclick="setF(this,'poesia')">Poesía</div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       CATÁLOGO
+       Contenedor vacío. JavaScript inyecta aquí las tarjetas
+       mediante innerHTML en la función render().
+       id="cat" es el punto de anclaje que usa JS.
+       ══════════════════════════════════════════════════════════ -->
+  <div class="catalogo" id="cat"></div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       JAVASCRIPT — TODA LA LÓGICA DE LA PÁGINA
+       Dividido en dos bloques principales:
+         1) Animación del ojo grande (Canvas API)
+         2) Catálogo: datos, filtrado y renderizado
+       ══════════════════════════════════════════════════════════ -->
+  <script>
+
+    /* ──────────────────────────────────────────────────────────
+       BLOQUE 1 — OJO ANIMADO EN CANVAS
+       Usa la API 2D de Canvas para dibujar frame a frame.
+       requestAnimationFrame sincroniza el dibujo con el monitor
+       (≈60 veces por segundo) sin consumir recursos innecesarios.
+       ────────────────────────────────────────────────────────── */
+
+    // Obtenemos referencias al canvas y a su contexto 2D
+    const cv = document.getElementById('eyeCanvas');
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;   // dimensiones del canvas
+    const cx = W / 2, cy = H / 2;        // centro del canvas
+
+    let t = 0;   // acumulador de tiempo en segundos
+
+    /* drawEye(t) — dibuja un fotograma del ojo según el tiempo t
+       El ciclo completo dura 6 segundos (dur=6).
+       p = fracción del ciclo actual (0..1) */
+    function drawEye(t) {
+      ctx.clearRect(0, 0, W, H);   // borra el frame anterior
+
+      const dur = 6;
+      const p = (t % dur) / dur; // posición en el ciclo 0→1
+
+      /* Calcula el desplazamiento horizontal de la pupila (px):
+         - p < 0.15: pupila centrada
+         - p 0.15→0.35: sale hacia la derecha (+75px) con easing
+         - p 0.35→0.50: vuelve desde la izquierda (-75px)
+         - resto: centrada de nuevo */
+      let px;
+      if (p < 0.15) px = 0;
+      else if (p < 0.35) px = easeInOut((p - 0.15) / 0.20) * 75;
+      else if (p < 0.50) px = -75 + easeInOut((p - 0.35) / 0.15) * 75;
+      else px = 0;
+
+      // ── Dibuja la almendra del ojo (fondo azul claro) ──
+      ctx.save();
+      ctx.beginPath();
+      eyePath(cx, cy, 148, 56);   // semiejes horizontal/vertical
+      ctx.fillStyle = '#dce9f2';
+      ctx.fill();
+
+      // clip(): lo que dibujemos después quedará recortado dentro del ojo
+      ctx.clip();
+
+      // ── Dibuja la pupila desplazada px píxeles ──
+      ctx.save();
+      ctx.translate(px, 0);  // desplazamiento horizontal de la pupila
+
+      /* Según la fase del ciclo se dibuja un interior diferente:
+         - Fase normal: pupila sólida roja
+         - Fase media: estrella de 5 puntas naranja rellena
+         - Fase decorativa: anillo + estrella de contorno + 5 círculos
+         - Vuelta a normal */
+      if (p < 0.55) {
+        circle(cx, cy, 46, '#8b3030');   // pupila sólida
+
+      } else if (p < 0.70) {
+        circle(cx, cy, 46, '#8b3030');   // base roja
+        circle(cx, cy, 20, '#f5a623');   // círculo amarillo interior
+        star5(cx, cy, 10, 20, '#8b3030', true);  // estrella rellena encima
+
+      } else if (p < 0.88) {
+        circle(cx, cy, 46, '#8b3030');   // base roja
+        // anillo circular naranja
+        ctx.beginPath();
+        ctx.arc(cx, cy, 34, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 2.5; ctx.stroke();
+        star5(cx, cy, 14, 28, '#f5a623', false);  // estrella de contorno
+        // 5 puntos en los vértices exteriores
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+          circle(cx + Math.cos(a) * 38, cy + Math.sin(a) * 38, 5, '#f5a623');
+        }
+      } else {
+        circle(cx, cy, 46, '#8b3030');   // pupila sólida otra vez
+      }
+
+      ctx.restore();   // deshace el translate(px)
+      ctx.restore();   // deshace el save/clip del ojo
+
+      // ── Borde del ojo por encima de todo lo anterior ──
+      ctx.save();
+      ctx.beginPath();
+      eyePath(cx, cy, 148, 56);
+      ctx.strokeStyle = '#c0614a';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* eyePath — traza la forma de almendra del ojo usando
+       dos curvas bezier simétricas arriba y abajo */
+    function eyePath(x, y, rx, ry) {
+      ctx.moveTo(x - rx, y);
+      ctx.bezierCurveTo(x - rx, y - ry * 1.5, x + rx, y - ry * 1.5, x + rx, y);
+      ctx.bezierCurveTo(x + rx, y + ry * 1.5, x - rx, y + ry * 1.5, x - rx, y);
+    }
+
+    /* circle — función auxiliar para dibujar un círculo relleno
+       en (x,y) con radio r y color dado */
+    function circle(x, y, r, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    /* star5 — dibuja una estrella de 5 puntas centrada en (x,y)
+       r1 = radio interior (valles), r2 = radio exterior (puntas)
+       fill=true → rellena; fill=false → solo contorno */
+    function star5(x, y, r1, r2, color, fill) {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5;  // ángulo de cada vértice
+        const r = i % 2 === 0 ? r2 : r1;            // alterna punta/valle
+        i === 0
+          ? ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
+          : ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = color; ctx.fill(); }
+      else { ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke(); }
+    }
+
+    /* easeInOut — función de aceleración/desaceleración cuadrática.
+       Convierte un progreso lineal (0→1) en movimiento suave:
+       arranca despacio, acelera en el centro y frena al final */
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    /* Bucle de animación usando requestAnimationFrame.
+       ts = timestamp en milisegundos dado por el navegador.
+       Restamos el timestamp anterior para obtener el delta
+       y acumulamos en segundos para manejar pausas correctamente */
+    let last = null;
+    function loop(ts) {
+      if (!last) last = ts;
+      t += (ts - last) / 1000;   // convierte ms a segundos
+      last = ts;
+      drawEye(t);
+      requestAnimationFrame(loop);  // solicita el siguiente frame
+    }
+    requestAnimationFrame(loop);   // arranca el bucle
+
+
+    /* ──────────────────────────────────────────────────────────
+       BLOQUE 2 — CATÁLOGO DE LIBROS
+       Datos + lógica de filtrado + renderizado HTML dinámico
+       ────────────────────────────────────────────────────────── */
+
+    /* Array de objetos libro. Cada objeto tiene:
+       t   → título
+       a   → autor
+       e   → emoji representativo (portada visual)
+       cat → categoría para el sistema de filtros
+       tags→ palabras clave (usadas también en la búsqueda)
+       ok  → true=disponible / false=prestado */
+    const libros = [
+      { t: "Cien años de soledad", a: "García Márquez", e: "📖", cat: "novela", tags: ["realismo mágico", "colombia"], ok: true },
+      { t: "El origen de las especies", a: "Charles Darwin", e: "🔬", cat: "ciencia", tags: ["biología", "evolución"], ok: true },
+      { t: "Sapiens", a: "Yuval Noah Harari", e: "🌍", cat: "historia", tags: ["humanidad", "prehistoria"], ok: false },
+      { t: "La República", a: "Platón", e: "🏛️", cat: "filosofia", tags: ["política", "justicia"], ok: true },
+      { t: "El arte de la guerra", a: "Sun Tzu", e: "⚔️", cat: "filosofia", tags: ["estrategia", "clásico"], ok: true },
+      { t: "Rayuela", a: "Julio Cortázar", e: "📚", cat: "novela", tags: ["argentina", "vanguardia"], ok: false },
+      { t: "Una breve historia del tiempo", a: "Stephen Hawking", e: "🔭", cat: "ciencia", tags: ["física", "cosmología"], ok: true },
+      { t: "Historia de la fealdad", a: "Umberto Eco", e: "🎨", cat: "arte", tags: ["estética", "visual"], ok: true },
+      { t: "Poemas de Lorca", a: "F. García Lorca", e: "🌹", cat: "poesia", tags: ["andalucía", "lírica"], ok: true },
+      { t: "El nombre de la rosa", a: "Umberto Eco", e: "📜", cat: "novela", tags: ["medieval", "misterio"], ok: false },
+      { t: "Cosmos", a: "Carl Sagan", e: "🌌", cat: "ciencia", tags: ["astronomía", "divulgación"], ok: true },
+      { t: "Historia del arte", a: "E.H. Gombrich", e: "🖼️", cat: "arte", tags: ["pintura", "clásico"], ok: true },
+      { t: "La divina comedia", a: "Dante Alighieri", e: "🕯️", cat: "poesia", tags: ["italia", "medieval"], ok: true },
+      { t: "Don Quijote", a: "Miguel de Cervantes", e: "🗡️", cat: "novela", tags: ["clásico", "español"], ok: true },
+      { t: "Meditaciones", a: "Marco Aurelio", e: "🏺", cat: "filosofia", tags: ["estoicismo", "roma"], ok: true },
+      { t: "El mundo de ayer", a: "Stefan Zweig", e: "🗺️", cat: "historia", tags: ["europa", "memoria"], ok: false },
+    ];
+
+    let fActivo = 'todos';  // categoría actualmente seleccionada
+
+    /* setF(el, cat) — cambia el filtro activo:
+       1) Quita la clase "on" de todos los filtros
+       2) Añade "on" al filtro pulsado (el)
+       3) Actualiza fActivo y refiltra el catálogo */
+    function setF(el, cat) {
+      document.querySelectorAll('.filtro').forEach(f => f.classList.remove('on'));
+      el.classList.add('on');
+      fActivo = cat;
+      filtrar();
+    }
+
+    /* filtrar() — lee el texto del input y el filtro activo,
+       y muestra solo los libros que cumplen AMBAS condiciones:
+       - mC: la categoría coincide con el filtro (o es 'todos')
+       - mQ: el texto buscado aparece en título, autor o algún tag */
+    function filtrar() {
+      const q = document.getElementById('q').value.toLowerCase();
+      const lista = libros.filter(l => {
+        const mC = fActivo === 'todos' || l.cat === fActivo;
+        const mQ = !q
+          || l.t.toLowerCase().includes(q)
+          || l.a.toLowerCase().includes(q)
+          || l.tags.some(t => t.includes(q));
+        return mC && mQ;
+      });
+      render(lista);
+    }
+
+    /* render(lista) — genera el HTML de las tarjetas e inyecta
+       en el contenedor #cat mediante innerHTML.
+       Si la lista está vacía muestra un mensaje de "Sin resultados".
+
+       Cada tarjeta contiene:
+         .cover  → portada con patrón de tablero, 4 puntos de esquina y emoji
+         .info   → título, autor, tags y estado de disponibilidad
+
+       Template literals (``) permiten incrustar expresiones JS
+       directamente dentro de la cadena HTML. */
+    function render(lista) {
+      const c = document.getElementById('cat');
+      if (!lista.length) {
+        c.innerHTML = `<div style="grid-column:1/-1;text-align:center;
+                       padding:60px;color:#8b3030;opacity:.7;">Sin resultados</div>`;
+        return;
+      }
+      c.innerHTML = lista.map(l => `
+        <div class="card">
+          <div class="cover">
+            <!-- Cuatro puntos decorativos en las esquinas -->
+            <div class="dot d1"></div>
+            <div class="dot d2"></div>
+            <div class="dot d3"></div>
+            <div class="dot d4"></div>
+            <!-- Emoji del libro como imagen visual de la portada -->
+            <span>${l.e}</span>
+          </div>
+          <div class="info">
+            <h3>${l.t}</h3>
+            <div class="autor">${l.a}</div>
+            <!-- Tags: se genera un <span> por cada elemento del array -->
+            <div class="tags">
+              ${l.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+            <!-- Estado de disponibilidad: clase "ok" o "no" según l.ok -->
+            <span class="estado ${l.ok ? 'ok' : 'no'}">
+              ${l.ok ? '✓ Disponible' : '✗ Prestado'}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Renderizado inicial con todos los libros al cargar la página
+    render(libros);
+
+  </script>
+
+</body>
+
+</html>

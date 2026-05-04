@@ -1,0 +1,432 @@
+/* ============================================================
+   RESET UNIVERSAL
+   Elimina márgenes y rellenos por defecto de todos los
+   elementos, y hace que el tamaño incluya bordes y padding
+   (box-sizing: border-box). Así partimos de cero en todos
+   los navegadores.
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   VARIABLES CSS (custom properties)
+   Definidas en :root para que sean accesibles en toda la página.
+   --az  → azul claro (fondo principal y etiquetas)
+   --am  → amarillo/naranja (acentos en tablero y filtros)
+   --ro  → rojo oscuro (color principal de textos y elementos)
+   --rc  → rojo coral (bordes y detalles secundarios)
+   ============================================================ */
+:root {
+  --az: #c8dae8;
+  --am: #f5a623;
+  --ro: #8b3030;
+  --rc: #c0614a;
+}
+
+/* ============================================================
+   BODY — BASE DE LA PÁGINA
+   - Georgia serif: tipografía clásica acorde a una biblioteca
+   - background: color de fondo visible mientras carga el tablero
+   - min-height: 100vh asegura que ocupe al menos toda la pantalla
+   - overflow-x: hidden evita scroll horizontal no deseado
+   - cursor: default mantiene el cursor estándar en todo momento
+   ============================================================ */
+body {
+  font-family: Georgia, serif;
+  background: var(--az);
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+
+/* ============================================================
+   FONDO ANIMADO — TABLERO DE AJEDREZ
+   Elemento fijo que cubre toda la pantalla (inset:0 = arriba,
+   derecha, abajo, izquierda = 0). z-index:0 lo deja detrás
+   de todo el contenido.
+
+   repeating-conic-gradient: crea el patrón de cuadrícula
+   tipo tablero alternando --am y --az cada 25% de giro.
+   "0 0 / 70px 70px" define el punto de inicio y el tamaño
+   de cada celda del patrón.
+
+   La animación bgMove desplaza el fondo 70px hacia la derecha
+   en bucle, creando la ilusión de movimiento continuo.
+   ============================================================ */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: repeating-conic-gradient(var(--am) 0% 25%,
+      var(--az) 0% 50%) 0 0 / 70px 70px;
+  animation: bgMove 4s linear infinite;
+}
+
+/* Keyframe: mueve el fondo un cuadro (70px) hacia la derecha
+   en cada ciclo de 4 segundos */
+@keyframes bgMove {
+  to {
+    background-position: 70px 0;
+  }
+}
+
+
+/* ============================================================
+   HEADER — BARRA SUPERIOR
+   - position: relative + z-index:10 → se muestra por encima
+     del fondo animado
+   - rgba con 0.95 de opacidad: casi sólido pero ligeramente
+     translúcido, deja intuir el fondo
+   - border-bottom: línea decorativa inferior en rojo coral
+   - height: 70px fijo; flex centra los hijos verticalmente
+     y los separa en los extremos (space-between)
+   ============================================================ */
+header {
+  position: relative;
+  z-index: 10;
+  background: rgba(200, 218, 232, 0.95);
+  border-bottom: 3px solid var(--rc);
+  padding: 0 40px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── LOGO (contenedor del ojo mini + texto) ──
+   flex con gap:12px separa el SVG del texto */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Texto del logo: mayúsculas, espaciado amplio, rojo oscuro */
+.logo-text {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--ro);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+
+/* ── NAVEGACIÓN ──
+   Cada enlace es una "píldora" con borde redondeado.
+   transition:.2s hace que el cambio de color al hover sea suave */
+nav a {
+  margin-left: 8px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  color: var(--ro);
+  border: 1.5px solid var(--rc);
+  transition: 0.2s;
+}
+
+/* Estado activo (.on) y hover: fondo rojo, texto blanco */
+nav a:hover,
+nav a.on {
+  background: var(--ro);
+  color: #fff;
+  border-color: var(--ro);
+}
+
+
+/* ============================================================
+   HERO — SECCIÓN CENTRAL CON EL OJO GRANDE Y TÍTULO
+   - z-index:5 → encima del fondo pero debajo del header
+   - flex columna + align-items:center: apila y centra hijos
+   - gap:14px separa uniformemente el canvas, h1 y párrafo
+   ============================================================ */
+.hero {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 28px;
+  gap: 14px;
+  text-align: center;
+}
+
+/* drop-shadow sobre el canvas del ojo: sombra rojiza suave */
+.eye-big {
+  ;
+}
+
+/* Título principal grande, rojo, con ligera sombra de texto
+   para separarlo visualmente del fondo */
+.hero h1 {
+  font-size: 2.4rem;
+  color: var(--ro);
+  letter-spacing: 3px;
+}
+
+/* Subtítulo: más pequeño, mismo rojo pero con 70% de opacidad */
+.hero p {
+  font-size: 0.9rem;
+  color: var(--ro);
+  opacity: 0.7;
+  letter-spacing: 2px;
+}
+
+
+/* ============================================================
+   BUSCADOR
+   - justify-content:center centra horizontalmente la caja
+   - padding-bottom separa el buscador de los filtros
+   ============================================================ */
+.search {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px 32px;
+}
+
+/* Caja exterior del buscador: fondo blanco semitransparente,
+   bordes redondeados (pill shape), borde rojo coral,
+   overflow:hidden recorta el botón dentro de la forma */
+.search-box {
+  display: flex;
+  max-width: 520px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.93);
+  border-radius: 40px;
+  border: 2px solid var(--rc);
+  overflow: hidden;
+}
+
+/* Campo de texto: flex:1 lo hace crecer hasta llenar el espacio,
+   outline:none elimina el borde azul del navegador al enfocar */
+.search-box input {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  /* hereda Georgia del body */
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #222;
+}
+
+/* Placeholder en gris claro */
+.search-box input::placeholder {
+  color: #bbb;
+}
+
+/* Botón de buscar: fondo rojo, sin bordes propios,
+   cursor pointer para indicar que es clickeable */
+.search-box button {
+  padding: 12px 24px;
+  background: var(--ro);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   FILTROS — BOTONES DE CATEGORÍA
+   flex-wrap:wrap permite que los botones salten de línea
+   en pantallas pequeñas sin romper el layout
+   ============================================================ */
+.filtros {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 24px 20px;
+}
+
+/* Cada botón filtro: forma de píldora, fondo ligeramente crema,
+   transition:.2s suaviza el cambio de color */
+.filtro {
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1.5px solid var(--rc);
+  background: rgba(245, 240, 232, 0.92);
+  color: #333;
+  transition: 0.2s;
+}
+
+/* Filtro activo o en hover: fondo amarillo, borde amarillo */
+.filtro:hover,
+.filtro.on {
+  background: var(--am);
+  border-color: var(--am);
+}
+
+
+/* ============================================================
+   CATÁLOGO — GRID DE TARJETAS
+   auto-fill + minmax(185px,1fr): crea tantas columnas como
+   quepan, con un mínimo de 185px y creciendo por igual.
+   max-width:1100px + margin:0 auto centra el grid en pantallas
+   anchas sin dejar las tarjetas demasiado estiradas.
+   ============================================================ */
+.catalogo {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 16px;
+  padding: 0 40px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── TARJETA INDIVIDUAL ──
+   overflow:hidden recorta el contenido a las esquinas
+   redondeadas. transition en transform y box-shadow para
+   el efecto de elevación al pasar el ratón. */
+.card {
+  background: rgba(245, 240, 232, 0.97);
+  border-radius: 10px;
+  border: 2px solid var(--rc);
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+  cursor: pointer;
+}
+
+/* Hover: sube 5px, gira 1° y añade sombra rojiza */
+.card:hover {
+  transform: translateY(-5px) rotate(-1deg);
+  box-shadow: 0 10px 28px rgba(139, 48, 48, 0.25);
+}
+
+/* ── PORTADA DE CADA TARJETA ──
+   Reproduce el patrón de tablero a escala más pequeña (30px).
+   position:relative permite situar los puntos decorativos
+   en las esquinas con position:absolute. */
+.cover {
+  height: 140px;
+  position: relative;
+  overflow: hidden;
+  background: repeating-conic-gradient(var(--am) 0% 25%,
+      var(--az) 0% 50%) 0 0 / 30px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Punto decorativo en cada esquina de la portada */
+.cover .dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* círculo perfecto */
+  background: var(--ro);
+  opacity: 0.8;
+}
+
+/* Posicionamiento individual de cada punto en su esquina */
+.cover .d1 {
+  top: 8px;
+  left: 8px;
+}
+
+.cover .d2 {
+  top: 8px;
+  right: 8px;
+}
+
+.cover .d3 {
+  bottom: 8px;
+  left: 8px;
+}
+
+.cover .d4 {
+  bottom: 8px;
+  right: 8px;
+}
+
+/* Emoji del libro: z-index:1 lo saca sobre el patrón de fondo */
+.cover span {
+  font-size: 2.6rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── ÁREA DE INFORMACIÓN TEXTUAL ──
+   Padding interior para que el texto no toque los bordes */
+.info {
+  padding: 11px 13px 13px;
+}
+
+/* Título del libro: negrita, rojo, interlineado 1.3 para
+   títulos de dos líneas */
+.info h3 {
+  font-size: 0.87rem;
+  font-weight: bold;
+  color: var(--ro);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+/* Nombre del autor: gris, más pequeño */
+.info .autor {
+  font-size: 0.72rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+/* Contenedor de etiquetas temáticas: flex con wrap */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Cada etiqueta temática: fondo azul claro, texto rojo,
+   forma de píldora pequeña */
+.tag {
+  font-size: 0.58rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--az);
+  color: var(--ro);
+  border: 1px solid var(--rc);
+}
+
+/* Etiqueta de disponibilidad: base común (inline-block
+   para que acepte padding, margen superior para separarse
+   de las tags) */
+.estado {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.62rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Disponible: fondo verde muy suave */
+.ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+/* Prestado: fondo naranja muy suave */
+.no {
+  background: #fff3e0;
+  color: #bf360c;
+  border: 1px solid #ffcc80;
+}
